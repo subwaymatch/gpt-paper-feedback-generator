@@ -101,7 +101,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen relative">
       <div className="grid grid-cols-1 lg:grid-cols-2">
         <LeftColumn
           prompt={prompt}
