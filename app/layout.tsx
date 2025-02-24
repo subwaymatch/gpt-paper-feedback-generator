@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Inter } from "next/font/google";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "GPT Paper Feedback Generator",
@@ -14,7 +21,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={`font-inter tracking-tight antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }
