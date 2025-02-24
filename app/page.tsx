@@ -1,32 +1,14 @@
 "use client";
 
-import type React from "react";
-
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Loader2, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { LeftColumn } from "./_components/LeftColumn";
+import { FileCard } from "./_components/FileCard";
+import { BottomBar } from "./_components/BottomBar";
+import { readFileContent } from "@/utils/fileUtils";
 import { pdfjs } from "react-pdf";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  readFileContent,
-  readWordDocument,
-  readPDFDocument,
-  readPlainText,
-} from "@/utils/fileUtils";
+import { MODEL_DESCRIPTIONS } from "@/app/constants";
 
 interface FileWithPreview {
   id: string;
@@ -36,9 +18,14 @@ interface FileWithPreview {
 }
 
 export default function Home() {
+  // Get the first model from MODEL_DESCRIPTIONS
+  const defaultModel = Object.keys(MODEL_DESCRIPTIONS)[0];
+  const [selectedModel, setSelectedModel] = useState<string>(defaultModel);
+
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [error, setError] = useState<string>("");
   const [isWorkerReady, setIsWorkerReady] = useState(false);
+  const [prompt, setPrompt] = useState<string>("");
 
   useEffect(() => {
     pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -116,22 +103,16 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       <div className="grid grid-cols-1 lg:grid-cols-2">
-        {/* Left Column */}
-        <div className="p-4 lg:p-8 lg:sticky lg:top-0 lg:h-screen">
-          <div className="max-w-xl space-y-2">
-            <h1 className="text-2xl font-bold">GPT Paper Feedback Generator</h1>
-            <p className="text-muted-foreground">
-              Upload .doc, .docx, or .pdf files to generate feedback using one
-              of the OpenAI models.
-            </p>
-          </div>
-        </div>
+        <LeftColumn
+          prompt={prompt}
+          setPrompt={setPrompt}
+          selectedModel={selectedModel}
+          setSelectedModel={setSelectedModel}
+        />
 
         {/* Right Column */}
         <div className="bg-slate-100 p-2 lg:p-4 relative min-h-screen">
           <div className="max-w-xl mx-auto space-y-6 pb-20">
-            {" "}
-            {/* Add padding bottom to prevent content overlap */}
             <Input
               type="file"
               accept=".doc,.docx,.pdf"
@@ -146,72 +127,18 @@ export default function Home() {
               </Alert>
             )}
             <div className="space-y-4">
-              {files.map(({ id, file, preview, loading }) => (
-                <Card key={id} className="border-slate-200">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-base font-medium flex items-center gap-2">
-                      <Badge className="uppercase">
-                        {file.name.split(".").pop()}
-                      </Badge>
-                      {file.name}
-                    </CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeFile(id)}
-                      className="h-8 w-8"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        {loading && (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        )}
-                        <p className="text-sm text-muted-foreground">
-                          {preview}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              {files.map((file) => (
+                <FileCard key={file.id} {...file} onRemove={removeFile} />
               ))}
             </div>
           </div>
 
           {files.length > 0 && (
-            <div className="fixed bottom-0 right-0 lg:w-1/2 bg-slate-100 border-t border-slate-200 p-4">
-              <div className="max-w-xl mx-auto flex items-center justify-between">
-                <p className="text-sm text-slate-600 font-semibold text-muted-foreground">
-                  {files.length} file{files.length === 1 ? "" : "s"} selected
-                </p>
-                <div className="flex gap-4">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline">Reset</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action will remove all uploaded files. This
-                          action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={resetFiles}>
-                          Continue
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                  <Button>Submit</Button>
-                </div>
-              </div>
-            </div>
+            <BottomBar
+              filesCount={files.length}
+              onReset={resetFiles}
+              onSubmit={() => {}} // Implement submit handler
+            />
           )}
         </div>
       </div>
