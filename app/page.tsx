@@ -10,10 +10,10 @@ import { readFileContent } from "@/utils/fileUtils";
 import { pdfjs } from "react-pdf";
 import { MODEL_DESCRIPTIONS } from "@/app/constants";
 
-interface FileWithPreview {
+interface FileWithContent {
   id: string;
   file: File;
-  preview: string;
+  content: string;
   loading: boolean;
 }
 
@@ -22,10 +22,11 @@ export default function Home() {
   const defaultModel = Object.keys(MODEL_DESCRIPTIONS)[0];
   const [selectedModel, setSelectedModel] = useState<string>(defaultModel);
 
-  const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [files, setFiles] = useState<FileWithContent[]>([]);
   const [error, setError] = useState<string>("");
   const [isWorkerReady, setIsWorkerReady] = useState(false);
   const [prompt, setPrompt] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -59,7 +60,7 @@ export default function Home() {
     const newFiles = selectedFiles.map((file) => ({
       id: crypto.randomUUID(),
       file,
-      preview: "Loading...",
+      content: "Loading...",
       loading: true,
     }));
 
@@ -69,19 +70,17 @@ export default function Home() {
     for (const fileData of newFiles) {
       try {
         const content = await readFileContent(fileData.file);
-        const preview =
-          content.slice(0, 200) + (content.length > 200 ? "..." : "");
 
         setFiles((prev) =>
           prev.map((f) =>
-            f.id === fileData.id ? { ...f, preview, loading: false } : f
+            f.id === fileData.id ? { ...f, content, loading: false } : f
           )
         );
       } catch (err) {
         setFiles((prev) =>
           prev.map((f) =>
             f.id === fileData.id
-              ? { ...f, preview: "Error reading file content", loading: false }
+              ? { ...f, content: "Error reading file content", loading: false }
               : f
           )
         );
@@ -98,6 +97,41 @@ export default function Home() {
   const resetFiles = () => {
     setFiles([]);
     setError("");
+  };
+
+  const handleSubmit = async () => {
+    if (!prompt || files.length === 0) {
+      setError("Please provide a prompt and upload at least one file.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+          files,
+          model: selectedModel,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate feedback");
+      }
+
+      const data = await response.json();
+      // Handle the feedback data here
+      console.log("Feedback:", data.feedback);
+    } catch (error) {
+      console.error("Error:", error);
+      setError("Failed to generate feedback. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -137,7 +171,8 @@ export default function Home() {
             <BottomBar
               filesCount={files.length}
               onReset={resetFiles}
-              onSubmit={() => {}} // Implement submit handler
+              onSubmit={handleSubmit}
+              isSubmitting={isSubmitting}
             />
           )}
         </div>

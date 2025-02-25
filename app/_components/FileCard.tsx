@@ -6,7 +6,7 @@ import { Loader2, X } from "lucide-react";
 interface FileCardProps {
   id: string;
   file: File;
-  preview: string;
+  content: string;
   loading: boolean;
   onRemove: (id: string) => void;
 }
@@ -14,10 +14,11 @@ interface FileCardProps {
 export function FileCard({
   id,
   file,
-  preview,
+  content,
   loading,
   onRemove,
 }: FileCardProps) {
+  const preview = content.slice(0, 200) + (content.length > 200 ? "..." : "");
   return (
     <Card className="border-slate-200">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
